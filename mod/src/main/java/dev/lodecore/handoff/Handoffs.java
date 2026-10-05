@@ -38,6 +38,7 @@ import net.minecraft.network.protocol.game.GameProtocols;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.level.ChunkMap;
 import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.server.bossevents.CustomBossEvent;
 import net.minecraft.server.level.ServerBossEvent;
@@ -79,6 +80,12 @@ public final class Handoffs {
 			new TicketType(0L, TicketType.FLAG_LOADING | TicketType.FLAG_KEEP_DIMENSION_ACTIVE));
 	/** How long the world stays held around a player after they arrive. */
 	private static final int LINGER_TICKS = 100;
+	/**
+	 * How many rings beyond the view distance the world is held around a player on their way here.
+	 * A client's view takes in the ring around its view distance, and the game sends a chunk only
+	 * once it ticks, which takes one more ring loaded around it, as a player's own tickets give.
+	 */
+	private static final int HELD_BEYOND_VIEW = 2;
 
 	private final Node node;
 	/** Players to let go of, once their packets are in. */
@@ -293,8 +300,7 @@ public final class Handoffs {
 			forget(previous);
 		}
 
-		// What a client can have loaded: its view distance, and the ring of chunks around it.
-		int radius = node.server().getPlayerList().getViewDistance() + 1;
+		int radius = node.server().getPlayerList().getViewDistance() + HELD_BEYOND_VIEW;
 		Incoming arriving = new Incoming(prepare.uuid(), prepare.token(), level, new ChunkPos(prepare.chunkX(), prepare.chunkZ()), radius);
 		incoming.put(prepare.uuid(), arriving);
 		level.getChunkSource().addTicketWithRadius(PREPARING, arriving.center, radius);
@@ -359,12 +365,17 @@ public final class Handoffs {
 		}
 	}
 
-	/** Whether every chunk the player's client can have is loaded here and matches its owner's copy. */
+	/**
+	 * Whether every chunk the player's client can have is ready to send here and matches its owner's
+	 * copy. One that became ready only after they arrived would be sent to them again, though their
+	 * client has it.
+	 */
 	private boolean caughtUp(Incoming arriving) {
-		ChunkTrackingView view = ChunkTrackingView.of(arriving.center, arriving.radius - 1);
+		ChunkTrackingView view = ChunkTrackingView.of(arriving.center, arriving.radius - HELD_BEYOND_VIEW);
+		ChunkMap chunks = arriving.level.getChunkSource().chunkMap;
 		boolean[] ready = {true};
 		view.forEach(pos -> {
-			if (ready[0] && (arriving.level.getChunkSource().getChunkNow(pos.x(), pos.z()) == null || !node.blocks().isSynced(arriving.level, pos))) {
+			if (ready[0] && (chunks.getChunkToSend(pos.pack()) == null || !node.blocks().isSynced(arriving.level, pos))) {
 				ready[0] = false;
 			}
 		});

@@ -12,7 +12,6 @@ lodestar and lodeproxy need Rust:
 
 ```sh
 cargo build --release
-cargo test --workspace
 ```
 
 The mod needs a JDK 25:
@@ -20,6 +19,17 @@ The mod needs a JDK 25:
 ```sh
 cd mod
 ./gradlew build        # -> mod/build/libs
+```
+
+## Testing
+
+The tests are end to end: they start real clusters of lodestar, lodeproxy and
+Fabric nodes running the mod, and play on them with scripted players. They
+need a JDK 25 and, the first time, the network, to download a Fabric server.
+See [tests/README.md](tests/README.md).
+
+```sh
+cargo test -p lodestar-e2e
 ```
 
 ## Running a cluster

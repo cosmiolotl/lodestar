@@ -9,7 +9,6 @@ license = "MIT"
 
 [workspace.dependencies]
 lode-protocol = { path = "crates/lode-protocol" }
-lodestar = { path = "crates/lodestar" }
 
 anyhow = "1"
 bytes = "1"
