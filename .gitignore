@@ -1,0 +1,16 @@
+/target/
+/.tools/
+/run/
+
+# Local configs hold secrets
+/lodestar.toml
+/lodeproxy.toml
+
+# Fabric mod
+/mod/.gradle/
+/mod/build/
+/mod/run/
+/mod/bin/
+
+# Local agents architecture guide
+AGENTS_ARCHITECTURE.md

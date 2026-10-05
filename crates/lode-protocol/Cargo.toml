@@ -1,0 +1,11 @@
+[package]
+name = "lode-protocol"
+description = "Wire protocol spoken between lodestar and its nodes and proxies"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+bytes.workspace = true
+thiserror.workspace = true
+tokio = { workspace = true, features = ["io-util"] }

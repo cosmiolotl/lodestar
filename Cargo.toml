@@ -1,0 +1,26 @@
+[workspace]
+resolver = "3"
+members = ["crates/lode-protocol", "crates/lodestar", "crates/lodeproxy", "tests"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+
+[workspace.dependencies]
+lode-protocol = { path = "crates/lode-protocol" }
+lodestar = { path = "crates/lodestar" }
+
+anyhow = "1"
+bytes = "1"
+rand = "0.8"
+serde = { version = "1", features = ["derive"] }
+thiserror = "2"
+tokio = { version = "1", features = ["full"] }
+toml = "0.8"
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1

@@ -1,0 +1,23 @@
+{
+	"schemaVersion": 1,
+	"id": "lodecore",
+	"version": "${version}",
+	"name": "Lodecore",
+	"description": "Turns this server into a node of a Lodestar cluster.",
+	"license": "MIT",
+	"environment": "server",
+	"entrypoints": {
+		"server": [
+			"dev.lodecore.Lodecore"
+		]
+	},
+	"mixins": [
+		"lodecore.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.3",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}
