@@ -44,7 +44,7 @@ cargo test -p lodestar-e2e
    and the address of lodestar. If the proxy is on another machine, also set
    `advertised-address` to where the proxy can reach this server. 
    
-   *Nodes do not and should not be reachable from the internet, though nodes with Lodecore will reject unsigned connections.*
+   *Nodes should not be reachable from the internet, though nodes with Lodecore will reject unsigned connections.*
 
    Start Lodestar first. Generation configuration on all workers should be the same for consistency.
 
