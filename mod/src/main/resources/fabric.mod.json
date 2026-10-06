@@ -5,6 +5,7 @@
 	"name": "Lodecore",
 	"description": "Turns this server into a node of a Lodestar cluster.",
 	"license": "MIT",
+	"icon": "assets/lodecore/icon.png",
 	"environment": "server",
 	"entrypoints": {
 		"server": [
