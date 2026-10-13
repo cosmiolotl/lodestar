@@ -1,5 +1,6 @@
 //! Connected players move between nodes without their clients noticing.
 
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Instant;
 
@@ -8,6 +9,32 @@ use lodestar_e2e::{Client, Cluster, Defer, Node, Options, secs, wait_until};
 const X: i32 = 1600;
 const Y: i32 = 200;
 const Z: i32 = -1600;
+
+fn move_for_setup(player: &Client, from: &Node, to: &Node) {
+    if from.id == to.id {
+        return;
+    }
+    let name = &player.name;
+    let reply = from.cmd(&format!("lodecore move {name} {}", to.id));
+    wait_until(
+        &format!("{name} to move from {from:?} to {to:?} during setup ({reply})"),
+        secs(60),
+        || to.has_player(name) && !from.has_player(name),
+    );
+    assert!(player.connected(), "{name} disconnected during setup");
+}
+
+fn separate_players(cluster: &Cluster, first: &Client, second: &Client) -> (Arc<Node>, Arc<Node>) {
+    let home = cluster.home_of(&first.name).unwrap();
+    let other = cluster.live_nodes().into_iter()
+        .find(|node| node.id != home.id)
+        .expect("handoff tests need a second live node");
+    let second_home = cluster.home_of(&second.name).unwrap();
+    // Placement favors faster nodes, so consecutive logins need not be split,
+    // especially after the shared cluster has generated the dragon's world.
+    move_for_setup(second, &second_home, &other);
+    (home, other)
+}
 
 fn platform(node: &Node) {
     node.cmd(&format!("forceload add {X} {Z}"));
@@ -21,10 +48,12 @@ fn platform(node: &Node) {
 /// and another player's, noticed nothing.
 fn move_player(player: &Client, observer: &Client, from: &Node, to: &Node) {
     let name = &player.name;
+    let shown_as = observer.wait_for("the observer to see the player before moving", secs(15), |s| {
+        s.sees_player(player.uuid).ok_or_else(|| "not shown".to_owned())
+    });
     eprintln!("e2e: moving {name} from {from:?} to {to:?}");
     let before = player.state().anomalies.clone();
     let observer_before = observer.state().anomalies.clone();
-    let shown_as = observer.state().sees_player(player.uuid);
     let id = from.entity_id(name).expect("the player's entity id");
     let started = Instant::now();
     from.cmd(&format!("lodecore move {name} {}", to.id));
@@ -62,15 +91,27 @@ fn move_player(player: &Client, observer: &Client, from: &Node, to: &Node) {
 
     let state = observer.state();
     assert!(state.heard(&[&said], started), "{} did not hear {name} after the move", observer.name);
-    assert_eq!(state.sees_player(player.uuid), shown_as, "{} was shown {name} anew", observer.name);
+    assert_eq!(state.sees_player(player.uuid), Some(shown_as), "{} was shown {name} anew", observer.name);
     assert_eq!(state.anomalies.counts(), observer_before.counts(), "{}'s client saw something out of place: {:?}", observer.name, state.anomalies);
 }
 
 pub fn a_walking_player_moves_between_nodes_unawares(cluster: &Cluster) {
+    walking_player_handoff(cluster, false);
+}
+
+pub fn co_located_players_move_between_nodes_unawares() {
+    let cluster = Cluster::start("co-located-handoff", Options { nodes: 1, ..Options::default() });
+    walking_player_handoff(&cluster, true);
+}
+
+fn walking_player_handoff(cluster: &Cluster, add_second_node: bool) {
     let walker = cluster.join("HandWalker");
     let observer = cluster.join("HandObserver");
-    let (home, other) = (cluster.home_of("HandWalker").unwrap(), cluster.home_of("HandObserver").unwrap());
-    assert_ne!(home.id, other.id, "both players were placed on {home:?}");
+    if add_second_node {
+        assert_eq!(cluster.home_of(&walker.name).unwrap().id, cluster.home_of(&observer.name).unwrap().id);
+        cluster.add_node("node-2");
+    }
+    let (home, other) = separate_players(cluster, &walker, &observer);
     let _unload = Defer(|| {
         home.cmd(&format!("forceload remove {X} {Z}"));
     });
@@ -105,8 +146,7 @@ pub fn lodestar_moves_players_to_where_they_are_simulated() {
     let cluster = Cluster::start("auto-handoff", Options { auto_handoff: true, ..Options::default() });
     let alex = cluster.join("Alex");
     let steve = cluster.join("Steve");
-    let (own, other) = (cluster.home_of("Alex").unwrap(), cluster.home_of("Steve").unwrap());
-    assert_ne!(own.id, other.id, "both players were placed on {own:?}");
+    let (own, other) = separate_players(&cluster, &alex, &steve);
 
     platform(&own);
     own.cmd(&format!("tp Alex {}.5 {Y} {Z}.5", X - 4));

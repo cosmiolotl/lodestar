@@ -85,6 +85,10 @@ fn main() {
             login::players_keep_their_things_on_another_node,
         ),
         isolated(
+            "handoff::co_located_players_move_between_nodes_unawares",
+            handoff::co_located_players_move_between_nodes_unawares,
+        ),
+        isolated(
             "handoff::lodestar_moves_players_to_where_they_are_simulated",
             handoff::lodestar_moves_players_to_where_they_are_simulated,
         ),
