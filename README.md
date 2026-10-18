@@ -3,8 +3,8 @@
 Minecraft horizontal scaling software built for large events and SMP servers. Consists of 3 modules:
 
 - **lodeproxy**: proxy software that coordinates player connections and handoffs
-- **lodestar**: the coordinator, sync, and consistency engine
-- **lodecore**: the Fabric mod (Minecraft 26.3) used for all nodes of the cluster
+- **lodestar**: coordinator, sync, and consistency engine
+- **lodecore**: Fabric mod used for all nodes of the cluster
 
 ## Building
 
@@ -14,7 +14,7 @@ lodestar and lodeproxy need Rust:
 cargo build --release
 ```
 
-The mod needs a JDK 25:
+The mod needs JDK 25:
 
 ```sh
 cd mod
@@ -31,7 +31,7 @@ cargo test -p lodestar-e2e
 
 ## Running a cluster
 
-1. Start lodestar. The first run writes `lodestar.toml` with a generated `token`.
+1. Start lodestar. The first run creates  `lodestar.toml` with a generated `token`.
 
    ```sh
    cargo run --release -p lodestar
@@ -56,10 +56,6 @@ cargo test -p lodestar-e2e
    ```
 
 5. Players connect to lodeproxy's `bind` address.
-
-lodestar moves connected players between nodes on its own unless
-`auto_handoff = false` is set in `lodestar.toml`. An operator can move one with
-`/lodecore move <player> <node>` on the node the player is on. 
 
 Worker nodes must all use the same `network-compression-threshold` so that the proxy can pass packets from one node and then another to the same client.
 
